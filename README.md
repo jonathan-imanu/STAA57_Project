@@ -2,7 +2,25 @@
 
 ## PS
 
-I use git with Rstudio datatools by going to File then new_projects and cloning the repo
+I use git with Rstudio datatools by going to File then new_projects and cloning 
+the repo.
+
+If you have trouble, make sure you do the intial git config stuff.
+
+When psuhing files, GitHub asks for your username and password. Your user name 
+is your regular github user name but the password is a [PAT] (https://forum.posit.co/t/pushing-to-github-requests-password-but-actually-needs-personal-access-token-pat/156610). 
+
+To create a PAT in github follow these steps:
+
+From your GitHub account, go to Settings → Developer Settings → 
+Personal Access Token → Tokens (classic) → 
+Generate New Token (Give your password) → Fillup the form → click Generate token 
+→ Copy the generated Token, it will be something like 
+ghp_sFhFsSHhTzMDreGRLjmks4Tzuzgthdvfsrta
+
+[See More] (https://stackoverflow.com/questions/68775869/message-support-for-password-authentication-was-removed)
+
+
 
 ## Past Example
 
