@@ -1,46 +1,29 @@
-# STAA57_Project
+# Water Quality of Ontario's Inland Lakes
 
-## PS
+Check out our <a href="docs/report.pdf" target="_blank">Report</a>
 
-I use git with Rstudio datatools by going to File then new_projects and cloning 
-the repo.
+## Introduction 
 
-If you have trouble, make sure you do the initial git config stuff.
+This report relies on four data sets sourced from the Ontario Lake Partner 
+Program (LPP) via the Ontario Data Catalog. The LPP conducts annual assessments 
+of water quality in inland lakes throughout Ontario, with data collected by 
+volunteers following standardized provincial protocols. Specifically, the 
+data sets cover total phosphorus, calcium, chloride concentration, and water 
+clarity for numerous inland lakes, predominantly situated in the Precambrian 
+Shield region. Each data set includes geographical coordinates, site descriptions, 
+collection dates, and metrics pertaining to the water quality.
 
-When pushing files (I suggest doing this using the Git icon located on the below 
-the file bar), GitHub asks for your username and password. 
+## Purpose 
 
-Your user name 
-is your regular github user name but the password is a [PAT](https://forum.posit.co/t/pushing-to-github-requests-password-but-actually-needs-personal-access-token-pat/156610). 
+This report aims to address the research question: 
 
-To create a PAT in github follow these steps:
+How has the quality of Ontario’s lakes changed overtime? And as of recent, 
+how productive are Ontario’s lakes?
 
-From your GitHub account, go to Settings → Developer Settings → 
-Personal Access Token → Tokens (classic) → 
-Generate New Token (Give your password) → Fillup the form → click Generate token 
-→ Copy the generated Token, it will be something like 
-ghp_sFhFsSHhTzMDreGRLjmks4Tzuzgthdvfsrta
+## Languages/Technologies Used 
 
-[See More](https://stackoverflow.com/questions/68775869/message-support-for-password-authentication-was-removed)
-
-
-
-## Past Example
-
-A past example I found online. It is alright. We can do a lot better:
-https://github.com/chrisyan04/Toronto-Bike-Theft-Report
-
-## Potential Datasets
-
-# My favorite: Ontario Lake Partner; A collection of 4 datasets. URL:
-# https://data.ontario.ca/dataset/ontario-lake-partner I also like the following:
-# 1.) Ontario Research Funding – Summary URL:
-# https://data.ontario.ca/dataset/ontario-research-funding-summary 2.) School
-# Information and Student Demographics URL:
-# https://data.ontario.ca/dataset/school-information-and-student-demographics/resource/e0e90bd5-d662-401a-a6d2-60d69ac89d14
-# 3.) Building Projects in Ontario URL:
-# https://data.ontario.ca/dataset/ontario-builds-key-infrastructure-projects/resource/36f92c5b-0c8b-4a4b-b4c5-d15a43894297
-# 4.) Deaths Involving COVID-19 by Vaccination Status URL:
-# https://data.ontario.ca/dataset/deaths-involving-covid-19-by-vaccination-status
-
-
+- R
+- RStudio
+- Tidyverse
+- ggplot2
+- Git

@@ -12,6 +12,7 @@ library(tidyverse)
 library(ggplot2)
 library(ggmap)
 library(knitr)
+library(lubridate)
 ```
 
 
@@ -19,10 +20,10 @@ library(knitr)
 
 # loading the data
 
-transparency <- read.csv("/home/rstudio/project/STAA57_Project/data/transparency.csv")
-phosphorus <- read.csv("/home/rstudio/project/STAA57_Project/data/phosphorus.csv")
-calcium <- read.csv("/home/rstudio/project/STAA57_Project/data/calcium.csv")
-chloride <- read.csv("/home/rstudio/project/STAA57_Project/data/chloride.csv")
+transparency <- read.csv("../data/transparency.csv")
+phosphorus <- read.csv("../data/phosphorus.csv")
+calcium <- read.csv("../data/calcium.csv")
+chloride <- read.csv("../data/chloride.csv")
 
 # data processing 
 
