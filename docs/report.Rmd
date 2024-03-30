@@ -1,7 +1,6 @@
 ---
 title: 'Quality of Ontario Lakes'
-subtitle: 'How has the quality of Ontario’s lakes changed overtime? And as of 
-recent, how productive are Ontario’s lakes?'
+subtitle: 'How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus, calcium, chloride concentration, and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?'
 authors: 'Joshua Antonio Crisologo: _____ & Jonathan Manuel: 1010080797'
 output: pdf_document
 date: "2024-03-30"
@@ -60,8 +59,6 @@ phosphorus <- phosphorus %>% mutate(Date = as.Date(Date..DD.MMM.YY.,
          phos_is_outlier = Possible.outlier) %>% 
   arrange(lat)
 
-# Messes everything up; Maybe best to keep it as serperate; Diff lat vals than others
-
 trans <- trans %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
                                          format = "%d-%b-%y")) %>% 
   select(-Date..DD.MMM.YY., -X_id) %>% 
@@ -75,11 +72,9 @@ sims = c("lat", "long",  "STN", "Site.ID",
          "Township","Lake.Name", "Site.Description")
 
 tmp1 <- merge(calcium, chloride, by=sims)
-tmp2 <- merge(phosphorus, trans, by=sims)
+data <- merge(phosphorus, trans, by=sims)
 
-# The line below breaks RStudio lol
-
-# data <- merge(tmp1, tmp2, by=sims)
+# merging all four datasets breaks RStudio
             
 ```
 
