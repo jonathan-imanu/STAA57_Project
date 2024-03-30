@@ -89,23 +89,24 @@ tmp2 <- merge(phosphorus, trans, by=sims)
 Sources to add while citing: https://data.ontario.ca/dataset/ontario-lake-partner
 & https://files.ontario.ca/moe_mapping/downloads/metadata/opendata/Lake_Partner_Program_metadata_EN2.pdf
 
-This report relies on four datasets sourced from the Ontario Lake Partner 
+This report is based on four datasets all sourced from the Ontario Lake Partner 
 Program (LPP) via the Ontario Data Catalog. The LPP conducts annual assessments 
 of water quality in inland lakes throughout Ontario, with data collected by 
-volunteers following standardized provincial protocols. Specifically, the 
+volunteers following standardized provincial protocols. The 
 datasets cover total phosphorus, calcium, chloride concentration, and water 
-clarity for numerous inland lakes, predominantly situated in the Precambrian 
-Shield region. Each dataset includes geographical coordinates, site descriptions, 
-collection dates, and metrics pertaining to the water quality. The data was last 
-validated on January 17, 2024 and is updated yearly. The largest overlapping 
-period across all four datasets spans from January 1, 2015, to December 31, 2022.
+clarity for numerous inland lakes in the Precambrian Shield region. Each dataset 
+includes geospatial information, site descriptions, collection dates, and metrics 
+pertaining to the water quality. The data was last validated on January 17, 2024 
+and is updated yearly. The largest overlapping period across all four datasets 
+from January 1, 2015, to December 31, 2022.
 
 ## Purpose
 
 This report aims to address the research question: 
 
-How has the quality of Ontario’s lakes changed overtime? And as of recent, 
-how productive are Ontario’s lakes?
+How has the water quality of Ontario’s inland lakes, as measured by total phosphorus, 
+calcium, chloride concentration, and water clarity, changed from 2015 to 2022? 
+What does this suggest about the productivity of Ontario’s inland lakes?
 
 ## 
 
