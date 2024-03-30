@@ -1,0 +1,57 @@
+---
+title: 'Quality of Ontario Lakes'
+subtitle: 'How has the quality of Ontario’s lakes changed overtime? And as of 
+recent, how productive are Ontario’s lakes?'
+authors: 'Joshua Antonio Crisologo: _____ & Jonathan Manuel: 1010080797'
+output: pdf_document
+date: "2024-03-30"
+---
+
+```{r setup, include=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggmap)
+library(knitr)
+```
+
+
+```{r, include=FALSE}
+
+# loading the data
+
+transparency <- read.csv("/home/rstudio/project/STAA57_Project/data/transparency.csv")
+phosphorus <- read.csv("/home/rstudio/project/STAA57_Project/data/phosphorus.csv")
+calcium <- read.csv("/home/rstudio/project/STAA57_Project/data/calcium.csv")
+chloride <- read.csv("/home/rstudio/project/STAA57_Project/data/chloride.csv")
+
+# data processing 
+
+phosphorus <- phosphorus %>% select(!Data.Collector)
+
+
+```
+
+
+## Introduction 
+
+Sources to add while citing: https://data.ontario.ca/dataset/ontario-lake-partner
+& https://files.ontario.ca/moe_mapping/downloads/metadata/opendata/Lake_Partner_Program_metadata_EN2.pdf
+
+This report relies on four data sets sourced from the Ontario Lake Partner 
+Program (LPP) via the Ontario Data Catalog. The LPP conducts annual assessments 
+of water quality in inland lakes throughout Ontario, with data collected by 
+volunteers following standardized provincial protocols. Specifically, the 
+data sets cover total phosphorus, calcium, chloride concentration, and water 
+clarity for numerous inland lakes, predominantly situated in the Precambrian 
+Shield region. Each data set includes geographical coordinates, site descriptions, 
+collection dates, and metrics pertaining to the water quality.
+
+## Purpose
+
+This report aims to address the research question: 
+
+How has the quality of Ontario’s lakes changed overtime? And as of recent, 
+how productive are Ontario’s lakes?
+
+## 
+
