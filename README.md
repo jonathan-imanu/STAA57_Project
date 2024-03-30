@@ -1,6 +1,6 @@
 # Water Quality of Ontario's Inland Lakes
 
-Check out our <a href="docs/report.pdf" target="_blank">Report</a>
+Check it out: <a href="docs/report.pdf" target="_blank">Report</a>
 
 ## Introduction 
 
@@ -20,10 +20,11 @@ This report aims to address the research question:
 How has the quality of Ontario’s lakes changed overtime? And as of recent, 
 how productive are Ontario’s lakes?
 
-## Languages/Technologies Used 
+## Technologies 
 
-- R
-- RStudio
-- Tidyverse
-- ggplot2
-- Git
+<img src="https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white" /> <img src="https://img.shields.io/badge/RStudio-75AADB?style=for-the-badge&logo=RStudio&logoColor=white" /> 
+<img src="https://img.shields.io/badge/Tidyverse-1A162D?logo=tidyverse&logoColor=fff&style=for-the-badge"/> 
+<img src="https://img.shields.io/badge/GIT-E44C30?style=for-the-badge&logo=git&logoColor=white" />
+
+
+

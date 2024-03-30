@@ -20,16 +20,67 @@ library(lubridate)
 
 # loading the data
 
-transparency <- read.csv("../data/transparency.csv")
+trans <- read.csv("../data/transparency.csv")
 phosphorus <- read.csv("../data/phosphorus.csv")
 calcium <- read.csv("../data/calcium.csv")
 chloride <- read.csv("../data/chloride.csv")
 
 # data processing 
 
+# Selected date-range is 2015-2022
+
 phosphorus <- phosphorus %>% select(!Data.Collector)
 
+glimpse(calcium)
 
+calcium <- calcium %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
+                                             format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Long..DMS., calcium_mg_l = Calcium..mg.L., 
+         cal_date=Date) %>% 
+  arrange(lat)
+
+chloride <- chloride %>% mutate(Date = as.Date(Date..dd.mm.yyyy., 
+                                               format = "%d/%m/%Y")) %>% 
+  select(-Date..dd.mm.yyyy., -X_id) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Longitude..DMS., 
+         chlroide_mg_l = Chloride..mg.L., chl_date=Date) %>% 
+  arrange(lat)
+
+# Dropped Sample 1 & Sample 2 in favor of "Average.Total.Phosphorus..µg.L."
+phosphorus <- phosphorus %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
+                                                   format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id, -Total.Phosphorus.sample.1..µg.L., 
+         -Total.Phosphorus.sample.2..µg.L.) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Long..DMS., 
+         avg_phos_ug_l = Average.Total.Phosphorus..µg.L., phos_date=Date, 
+         phos_is_outlier = Possible.outlier) %>% 
+  arrange(lat)
+
+# Messes everything up; Maybe best to keep it as serperate; Diff lat vals than others
+
+trans <- trans %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
+                                         format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Longitude..DMS., 
+         secchi_depth_m = Secchi.Depth..m., trans_date=Date, Township=TOWNSHIP) %>% 
+  arrange(lat)
+
+# The common variables between data sets
+sims = c("lat", "long",  "STN", "Site.ID", 
+         "Township","Lake.Name", "Site.Description")
+
+tmp1 <- merge(calcium, chloride, by=sims)
+tmp2 <- merge(phosphorus, trans, by=sims)
+
+# The line below breaks RStudio lol
+
+# data <- merge(tmp1, tmp2, by=sims)
+            
 ```
 
 
@@ -38,14 +89,16 @@ phosphorus <- phosphorus %>% select(!Data.Collector)
 Sources to add while citing: https://data.ontario.ca/dataset/ontario-lake-partner
 & https://files.ontario.ca/moe_mapping/downloads/metadata/opendata/Lake_Partner_Program_metadata_EN2.pdf
 
-This report relies on four data sets sourced from the Ontario Lake Partner 
+This report relies on four datasets sourced from the Ontario Lake Partner 
 Program (LPP) via the Ontario Data Catalog. The LPP conducts annual assessments 
 of water quality in inland lakes throughout Ontario, with data collected by 
 volunteers following standardized provincial protocols. Specifically, the 
-data sets cover total phosphorus, calcium, chloride concentration, and water 
+datasets cover total phosphorus, calcium, chloride concentration, and water 
 clarity for numerous inland lakes, predominantly situated in the Precambrian 
-Shield region. Each data set includes geographical coordinates, site descriptions, 
-collection dates, and metrics pertaining to the water quality.
+Shield region. Each dataset includes geographical coordinates, site descriptions, 
+collection dates, and metrics pertaining to the water quality. The data was last 
+validated on January 17, 2024 and is updated yearly. The largest overlapping 
+period across all four datasets spans from January 1, 2015, to December 31, 2022.
 
 ## Purpose
 
