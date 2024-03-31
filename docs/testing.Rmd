@@ -1,0 +1,203 @@
+---
+title: "testing"
+author: 'Joshua Crisologo: 1009860438'
+date: "2024-03-31"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggmap)
+library(knitr)
+library(lubridate)
+```
+
+
+```{r, include=FALSE}
+
+# loading the data
+
+trans <- read.csv("../data/transparency.csv")
+phosphorus <- read.csv("../data/phosphorus.csv")
+calcium <- read.csv("../data/calcium.csv")
+chloride <- read.csv("../data/chloride.csv")
+
+# data processing 
+
+# Selected date-range is 2015-2022
+
+phosphorus <- phosphorus %>% select(!Data.Collector)
+
+glimpse(calcium)
+
+calcium <- calcium %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
+                                             format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Long..DMS., calcium_mg_l = Calcium..mg.L., 
+         cal_date=Date) %>% 
+  arrange(lat)
+
+chloride <- chloride %>% mutate(Date = as.Date(Date..dd.mm.yyyy., 
+                                               format = "%d/%m/%Y")) %>% 
+  select(-Date..dd.mm.yyyy., -X_id) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Longitude..DMS., 
+         chlroide_mg_l = Chloride..mg.L., chl_date=Date) %>% 
+  arrange(lat)
+
+# Dropped Sample 1 & Sample 2 in favor of "Average.Total.Phosphorus..µg.L."
+phosphorus <- phosphorus %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
+                                                   format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id, -Total.Phosphorus.sample.1..µg.L., 
+         -Total.Phosphorus.sample.2..µg.L.) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Long..DMS., 
+         avg_phos_ug_l = Average.Total.Phosphorus..µg.L., phos_date=Date, 
+         phos_is_outlier = Possible.outlier) %>% 
+  arrange(lat)
+
+trans <- trans %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
+                                         format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id) %>% 
+  filter(2015 <= year(Date)) %>% 
+  rename(lat = Latitude..DMS., long = Longitude..DMS., 
+         secchi_depth_m = Secchi.Depth..m., trans_date=Date, Township=TOWNSHIP) %>% 
+  arrange(lat)
+
+# The common variables between data sets
+sims = c("lat", "long",  "STN", "Site.ID", 
+         "Township","Lake.Name", "Site.Description")
+
+tmp1 <- merge(calcium, chloride, by=sims)
+data <- merge(phosphorus, trans, by=sims)
+
+# merging all four datasets breaks RStudio
+            
+```
+
+
+```{r}
+# filtering data and lakes to most recent date of test
+ df = data %>% 
+      group_by(Lake.Name) %>%
+      filter(phos_date==max(phos_date)) %>%
+      filter(trans_date==max(trans_date))
+```
+
+```{r}
+# t.test sample test
+t.test(df$avg_phos_ug_l)
+```
+
+```{r}
+# bootstrapping sample, creating a 95% confidence interval for the
+# average phosphorous level
+boot_function = function() {
+  boot_data = df[sample(nrow(df), replace = TRUE), ]
+  
+  boot_mean = mean(boot_data$avg_phos_ug_l, na.rm = TRUE)
+  
+  return(boot_mean)
+}
+
+quantile(replicate(100,boot_function()), c(0.025, 0.975))
+```
+
+```{r}
+# using formulas in regards to TSI to calculate the TSI of each lake
+# 0 = oligotrophic
+# 1 = mesotrophic
+# 2 = eutrophic
+df = df %>% mutate(TSI_Depth = (60 - 14.41*log(secchi_depth_m))) %>% 
+  mutate(TSI_Phos = (14.42*log(avg_phos_ug_l) + 4.15)) %>% 
+  mutate(TSI = ((TSI_Depth + TSI_Phos) / 2)) %>% 
+  mutate(classification = case_when(TSI <= 40 ~ "0",
+                                    TSI <= 50 ~ "1",
+                                    TRUE ~ "2"))
+
+# dropping NA values (8)
+df_rm = df %>% drop_na()
+
+```
+
+```{r}
+# cross validation: splitting df into train and test of 60/40% for model testing
+final = df_rm
+final = final %>% mutate(group_ind = sample(c("train", "test"),
+                                            size=1,
+                                            prob = c(0.6, 0.4),
+                                            replace = T))
+
+final_train = final %>% filter(group_ind == "train")
+final_test = final %>% filter(group_ind == "test")
+
+# implementing decision tree analysis 
+# relating classification level (0,1,2) to avg phos lvl and secchi depth
+library(rpart)
+library(rattle)
+tree.m = rpart(classification ~ avg_phos_ug_l + secchi_depth_m, data = final_train,
+               method = "class")
+fancyRpartPlot(tree.m)
+```
+
+
+
+
+```{r}
+# another test: using randomForest with the same parameters to predict
+library(randomForest)
+
+rforest.m = randomForest(as.factor(classification) ~ avg_phos_ug_l + secchi_depth_m, data=df_rm,
+                         ntree=500, importance=TRUE)
+```
+
+```{r}
+# plotting variable importance
+varImpPlot(rforest.m)
+```
+```{r}
+# prediction using decision tree
+final_test = final_test %>% ungroup(.) %>% mutate(tree_predictions = 
+                                        predict(tree.m, newdata = final_test, type = "class"))
+
+# prediction using random forest
+
+final_test = final_test %>% mutate(rforest_predict = 
+                                        predict(rforest.m, newdata = final_test))
+
+glimpse(final_test)
+
+```
+```{r}
+# create the confusion matrix using decision tree model and test accuracy
+conmat = table(final_test$classification, final_test$tree_predictions)
+sum(diag(conmat))/sum(conmat)
+```
+```{r}
+# create confusion matrix using random forest model and test accuracy
+conmat = table(final_test$classification, final_test$rforest_predict)
+sum(diag(conmat))/sum(conmat)
+```
+
+```{r}
+#lat long map according to classification (W.I.P.)
+ggplot(df_rm, aes(y=lat, x=long, col=classification)) + geom_point()
+```
+
+```{r}
+# attempt at relating coords to map of Ontario (W.I.P.)
+library(ggpubr)
+library(jpeg)
+img=readJPEG("ontario.jpg")
+
+ggplot(df_rm, aes(y=lat, x=long, col=classification)) + background_image(img) +
+  geom_point()
+```
+
+
