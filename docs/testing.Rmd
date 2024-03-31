@@ -2,7 +2,7 @@
 title: "testing"
 author: 'Joshua Crisologo: 1009860438'
 date: "2024-03-31"
-output: pdf_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
