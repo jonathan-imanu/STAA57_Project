@@ -153,7 +153,8 @@ fancyRpartPlot(tree.m)
 # another test: using randomForest with the same parameters to predict
 library(randomForest)
 
-rforest.m = randomForest(as.factor(classification) ~ avg_phos_ug_l + secchi_depth_m, data=df_rm,
+rforest.m = randomForest(as.factor(classification) ~ avg_phos_ug_l + secchi_depth_m,
+                         data=final_train,
                          ntree=500, importance=TRUE)
 ```
 
