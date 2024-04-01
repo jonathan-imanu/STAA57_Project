@@ -1,7 +1,7 @@
 ---
 title: 'Quality of Ontario Lakes'
-subtitle: 'How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus, calcium, chloride concentration, and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?'
-authors: 'Joshua Antonio Crisologo: _____ & Jonathan Manuel: 1010080797'
+subtitle: 'How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?'
+authors: 'Joshua Antonio Crisologo: 1009860438 & Jonathan Manuel: 1010080797'
 output: pdf_document
 date: "2024-03-30"
 ---
@@ -12,6 +12,11 @@ library(ggplot2)
 library(ggmap)
 library(knitr)
 library(lubridate)
+library(rpart)
+library(rattle)
+library(randomForest)
+library(ggpubr)
+library(jpeg)
 ```
 
 
@@ -21,62 +26,44 @@ library(lubridate)
 
 trans <- read.csv("../data/transparency.csv")
 phosphorus <- read.csv("../data/phosphorus.csv")
-calcium <- read.csv("../data/calcium.csv")
-chloride <- read.csv("../data/chloride.csv")
+
+# The common variables between data sets
+sims = c("Latitude", "Longitude", "Site.ID", 
+         "Township","Lake.Name", "Site.Description")
 
 # data processing 
 
 # Selected date-range is 2015-2022
-
-phosphorus <- phosphorus %>% select(!Data.Collector)
-
-glimpse(calcium)
-
-calcium <- calcium %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
-                                             format = "%d-%b-%y")) %>% 
-  select(-Date..DD.MMM.YY., -X_id) %>% 
-  filter(2015 <= year(Date)) %>% 
-  rename(lat = Latitude..DMS., long = Long..DMS., calcium_mg_l = Calcium..mg.L., 
-         cal_date=Date) %>% 
-  arrange(lat)
-
-chloride <- chloride %>% mutate(Date = as.Date(Date..dd.mm.yyyy., 
-                                               format = "%d/%m/%Y")) %>% 
-  select(-Date..dd.mm.yyyy., -X_id) %>% 
-  filter(2015 <= year(Date)) %>% 
-  rename(lat = Latitude..DMS., long = Longitude..DMS., 
-         chlroide_mg_l = Chloride..mg.L., chl_date=Date) %>% 
-  arrange(lat)
-
 # Dropped Sample 1 & Sample 2 in favor of "Average.Total.Phosphorus..µg.L."
-phosphorus <- phosphorus %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
-                                                   format = "%d-%b-%y")) %>% 
+
+phosphorus <- phosphorus %>%
+  mutate(date = as.Date(Date..DD.MMM.YY., format = "%d-%b-%y")) %>% 
+         # mutate(year = format(Date, "%Y")) %>%
   select(-Date..DD.MMM.YY., -X_id, -Total.Phosphorus.sample.1..µg.L., 
-         -Total.Phosphorus.sample.2..µg.L.) %>% 
-  filter(2015 <= year(Date)) %>% 
-  rename(lat = Latitude..DMS., long = Long..DMS., 
-         avg_phos_ug_l = Average.Total.Phosphorus..µg.L., phos_date=Date, 
-         phos_is_outlier = Possible.outlier) %>% 
-  arrange(lat)
+         -Total.Phosphorus.sample.2..µg.L., -Data.Collector, -STN) %>%
+  filter(2015 <= year(date) & year(date) <= 2022) %>%
+  rename(Latitude = Latitude..DMS., Longitude = Long..DMS., 
+         avg_phos_ug_l = Average.Total.Phosphorus..µg.L., 
+         phos_date = date, 
+         phos_is_outlier = Possible.outlier) %>%
+  arrange(Latitude)
 
-trans <- trans %>% mutate(Date = as.Date(Date..DD.MMM.YY., 
-                                         format = "%d-%b-%y")) %>% 
-  select(-Date..DD.MMM.YY., -X_id) %>% 
-  filter(2015 <= year(Date)) %>% 
-  rename(lat = Latitude..DMS., long = Longitude..DMS., 
-         secchi_depth_m = Secchi.Depth..m., trans_date=Date, Township=TOWNSHIP) %>% 
-  arrange(lat)
+trans <- trans %>% 
+  mutate(date = as.Date(Date..DD.MMM.YY., format = "%d-%b-%y")) %>% 
+         # mutate(year = format(Date, "%Y")) %>%
+  select(-Date..DD.MMM.YY., -X_id, -STN) %>% 
+  filter(2015 <= year(date) & year(date) <= 2022) %>% 
+  rename(Latitude = Latitude..DMS., Longitude = Longitude..DMS., 
+         secchi_depth_m = Secchi.Depth..m., 
+         trans_date=date, 
+         Township=TOWNSHIP) %>%
+  arrange(Latitude) 
 
-# The common variables between data sets
-sims = c("lat", "long",  "STN", "Site.ID", 
-         "Township","Lake.Name", "Site.Description")
+data <- merge(phosphorus, trans, by=sims) %>% 
+        group_by(Lake.Name)
 
-tmp1 <- merge(calcium, chloride, by=sims)
-data <- merge(phosphorus, trans, by=sims)
-
-# merging all four datasets breaks RStudio
-            
 ```
+
 
 
 ## Introduction 
@@ -84,24 +71,53 @@ data <- merge(phosphorus, trans, by=sims)
 Sources to add while citing: https://data.ontario.ca/dataset/ontario-lake-partner
 & https://files.ontario.ca/moe_mapping/downloads/metadata/opendata/Lake_Partner_Program_metadata_EN2.pdf
 
-This report is based on four datasets all sourced from the Ontario Lake Partner 
+This report is based on two datasets sourced from the Ontario Lake Partner 
 Program (LPP) via the Ontario Data Catalog. The LPP conducts annual assessments 
 of water quality in inland lakes throughout Ontario, with data collected by 
 volunteers following standardized provincial protocols. The 
-datasets cover total phosphorus, calcium, chloride concentration, and water 
-clarity for numerous inland lakes in the Precambrian Shield region. Each dataset 
-includes geospatial information, site descriptions, collection dates, and metrics 
+datasets cover total phosphorus (ug / L) and water clarity measured by seechi depth (m) 
+for numerous inland lakes in the Precambrian Shield region. Each dataset includes 
+geospatial information, site descriptions, collection dates, and metrics 
 pertaining to the water quality. The data was last validated on January 17, 2024 
-and is updated yearly. The largest overlapping period across all four datasets 
-from January 1, 2015, to December 31, 2022.
+and is updated yearly. Both datasets were last updated on December 31, 2022. 
+
+# Dataset Description
+
+```{r, echo=FALSE, eval=TRUE }
+
+variables <- names(data)
+types <- sapply(data, class)
+descriptions <- c("", "", "", "", "", "", "", "", "", "", "")
+summary_df <- data.frame(Variable = variables, Types = types, Description = descriptions)
+kable(summary_df, row.names = FALSE)
+```
+
 
 ## Purpose
 
 This report aims to address the research question: 
 
-How has the water quality of Ontario’s inland lakes, as measured by total phosphorus, 
-calcium, chloride concentration, and water clarity, changed from 2015 to 2022? 
-What does this suggest about the productivity of Ontario’s inland lakes?
+***How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?***
 
-## 
+By answering this question, this report ultimately aims to provide insight on where the government of Ontario can best address its conservation efforts and understand the trend of productivity of Ontario's inland lakes.
+
+## Background Information
+
+Source (https://foca.on.ca/wp-content/uploads/2012/05/Guide-to-Interpreting-TP-and-Secchi-Data-Complete.pdf)
+
+Water quality, as measured by phosphorus levels and secchi depth, has a major influence on the biodiversity of inland lakes and freshwater streams. 
+
+In the vast majority of Ontario's inland lakes, phosphorus is the element that controls the growth of algae. As such total phosphorus concentrations (µg/L) are most aptly used to assess lake nutrient status. Limnologists place lakes into three categories based on their total phosphorus concentrations: oligotrophic (less than 10 µg/L), mesotrophic (10-20 µg/L TP), and eutrophic (over 20 µg/L). Oligotrophic lakes are low in nutrients and rarely have algal blooms. Mesotrophic lakes vary in characteristics and may experience moderate blooms. Eutrophic lakes have high nutrient levels and often suffer from persistent algal blooms.
+
+Source: https://hallshawklakes.ca/featured/secchi-readings/#:~:text=Secchi%20Reading%20and%20Lake%20Nutrient,enriched%2C%20higher%20levels%20of%20nutrients
+
+A Secchi disks are black and white disk used to ascertain water clarity 
+by lowering it into the water and measuring the point at which black and white can 
+no longer be distinguished. Readings of over 5 meters indicate oligotrophic conditions, depths of 3.0 to 4.9 meters suggest mesotrophic conditions and readings 
+less than 2.9 meters signify eutrophic lakes, with higher nutrient levels.
+
+```{r}
+
+```
+
 

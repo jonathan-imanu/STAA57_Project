@@ -17,7 +17,7 @@ collection dates, and metrics pertaining to the water quality.
 
 This report aims to address the following research question:
 
-**How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus, calcium, chloride concentration, and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?**
+**How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?**
 
 ## Technologies 
 
