@@ -59,8 +59,20 @@ trans <- trans %>%
          Township=TOWNSHIP) %>%
   arrange(Latitude) 
 
+# Merge the two dataframes together and update latitude and longitude values
 data <- merge(phosphorus, trans, by=sims) %>% 
-        group_by(Lake.Name)
+        group_by(Lake.Name) %>% 
+        mutate(char_lat = as.character(Latitude)) %>%
+        mutate(lat.deci = as.numeric(substr(char_lat, start = 1, stop = 2)) + 
+                          as.numeric(substr(char_lat, start = 3, stop=nchar(char_lat))) 
+                          * (0.1 ^ (nchar(char_lat) - 2))) %>% 
+        mutate(char_long = as.character(Longitude)) %>%
+        mutate(long.deci = as.numeric(substr(char_long, start = 1, stop = 2)) + 
+                          as.numeric(substr(char_long, start = 3, stop=nchar(char_long))) 
+                          * (0.1 ^ (nchar(char_long) - 2))) %>% 
+        select(-char_lat, -Latitude, -char_long, -Longitude) %>% 
+        rename(Latitude = lat.deci, Longitude = long.deci)
+
 
 ```
 
@@ -87,11 +99,30 @@ and is updated yearly. Both datasets were last updated on December 31, 2022.
 
 variables <- names(data)
 types <- sapply(data, class)
-descriptions <- c("", "", "", "", "", "", "", "", "", "", "")
+descriptions <- c("The latitude of the lake in DMS", 
+                  "The longitude of the lake in DMS", 
+                  "The site ID of the sampling point", 
+                  "The township the lake", 
+                  "The name of the lake", 
+                  "The description of the sampling point",
+                  "The average total phosphorus (ug / L)", 
+                  "Whether total phosphorus", 
+                  "The date that the phosphorus sample was collected", 
+                  "The depth at which the seechi disk can no longer be distinguished", 
+                  "The date that the seechi disk was inserted into the lake")
 summary_df <- data.frame(Variable = variables, Types = types, Description = descriptions)
 kable(summary_df, row.names = FALSE)
 ```
+```{r}
+library(ggpubr)
+library(jpeg)
+img=readJPEG("ontario.jpg")
 
+                                                 
+ggplot(data, aes(y=Latitude, x=Longitude, col=Site.ID)) + background_image(img) +
+  geom_point()
+
+```
 
 ## Purpose
 
@@ -101,7 +132,7 @@ This report aims to address the research question:
 
 By answering this question, this report ultimately aims to provide insight on where the government of Ontario can best address its conservation efforts and understand the trend of productivity of Ontario's inland lakes.
 
-## Background Information
+## Background
 
 Source (https://foca.on.ca/wp-content/uploads/2012/05/Guide-to-Interpreting-TP-and-Secchi-Data-Complete.pdf)
 
@@ -109,15 +140,97 @@ Water quality, as measured by phosphorus levels and secchi depth, has a major in
 
 In the vast majority of Ontario's inland lakes, phosphorus is the element that controls the growth of algae. As such total phosphorus concentrations (µg/L) are most aptly used to assess lake nutrient status. Limnologists place lakes into three categories based on their total phosphorus concentrations: oligotrophic (less than 10 µg/L), mesotrophic (10-20 µg/L TP), and eutrophic (over 20 µg/L). Oligotrophic lakes are low in nutrients and rarely have algal blooms. Mesotrophic lakes vary in characteristics and may experience moderate blooms. Eutrophic lakes have high nutrient levels and often suffer from persistent algal blooms.
 
-Source: https://hallshawklakes.ca/featured/secchi-readings/#:~:text=Secchi%20Reading%20and%20Lake%20Nutrient,enriched%2C%20higher%20levels%20of%20nutrients
 
-A Secchi disks are black and white disk used to ascertain water clarity 
-by lowering it into the water and measuring the point at which black and white can 
-no longer be distinguished. Readings of over 5 meters indicate oligotrophic conditions, depths of 3.0 to 4.9 meters suggest mesotrophic conditions and readings 
-less than 2.9 meters signify eutrophic lakes, with higher nutrient levels.
+## A basic graph to give the reader some sense into how our data is structured
+# Option 1A
 
-```{r}
+```{r, echo=FALSE, eval=TRUE}
 
+
+no_phos_outliers <- data %>% filter(avg_phos_ug_l <= 50)
+hist(no_phos_outliers$avg_phos_ug_l, freq = FALSE,
+     main = "Distribution of Average Phosphorus Concentration",
+     xlab = "Average Phosphorus Concentration (µg/l)",
+     ylab = "Density")
+
+# Add density line
+lines(density(no_phos_outliers$avg_phos_ug_l, adjust = 5), col = "red")
 ```
 
 
+Source: https://hallshawklakes.ca/featured/secchi-readings/#:~:text=Secchi%20Reading%20and%20Lake%20Nutrient,enriched%2C%20higher%20levels%20of%20nutrients
+
+Secchi disks are black and white disks used to ascertain water clarity 
+by lowering it into the water and measuring the point at which black and white can 
+no longer be distinguished. Readings of over 5 meters indicate oligotrophic conditions, 
+depths of 3.0 to 4.9 meters suggest mesotrophic conditions and readings 
+less than 2.9 meters signify eutrophic lakes, with higher nutrient levels.
+
+# Table 2
+
+```{r, echo=FALSE, eval=TRUE}
+lake_classification <- data %>% 
+  mutate(class = case_when(secchi_depth_m >= 5 ~ "Oligotrophic",
+                           secchi_depth_m >= 3 ~ "Mesotrophic",
+                           TRUE ~ "Eutrophic")) %>% 
+  mutate(year = year(trans_date)) %>% 
+  group_by(year, class) %>% 
+  rename(Year = year, Classification = class) %>% 
+  summarise(mean_secchi = mean(secchi_depth_m)) %>% 
+  pivot_wider(id_cols = Year,
+              names_from = Classification,
+              values_from = mean_secchi) %>% 
+  arrange(Year)
+  
+
+kable(lake_classification)
+```
+
+
+In an effort to ascertain the proportion of inland lakes whose secchi depth readings indicate eutrophic conditions (less than or equal to 2.9 metres), a one-sample proportion test will be conducted with a confidence interval of 95% and a sample size of 1000. The 25th and 75th percentiles of these proportions will be calculated using bootstrapping to gain a more holistic view of the proportion's variability.
+
+```{r, echo=FALSE}
+sample <- trans %>% select(trans_date, secchi_depth_m) %>% 
+                    sample_n(1000, replace = FALSE) %>% 
+                    drop_na()
+
+prop_test_result <- prop.test(
+  x = sum(sample$secchi_depth_m <= 2.9),  # Number of successes
+  n = 1000,                                # Total number of trials
+  conf.level = 0.95                        # Confidence level
+)
+
+#LMK IF THIS LOOKS NICER!
+# cat("Proportion Test for secchi_depth_m <= 2.9:\n")
+# cat("  - Sample size:", prop_test_result$n, "\n")
+# cat("  - Number of successes:", prop_test_result$x, "\n")
+# cat("  - Sample proportion:", prop_test_result$estimate, "\n")
+# cat("  - 95% Confidence Interval:", prop_test_result$conf.int, "\n")
+# cat("  - Test statistic:", prop_test_result$statistic, "\n")
+# cat("  - p-value:", prop_test_result$p.value, "\n")
+# cat("  - Method:", prop_test_result$method, "\n")
+# cat("  - Null hypothesis:", prop_test_result$null.value, "\n")
+# cat("  - Alternative hypothesis:", prop_test_result$alternative, "\n")
+
+```
+From this, it can be determined that the proportion of inland lakes that exhibit eutrophic conditions is estimated to be 0.254, with a 95% confidence interval ranging from 0.225164 and 0.2824012. Since the p-value < 2.2e-16, there is strong evidence against the null hypothesis. This suggests that the proportion of lakes that exhibit eutrophic conditions is significantly different than the null proportion of 0.5.
+
+
+```{r, echo=FALSE, eval=TRUE}
+
+boot_function = function(){
+  boot_data <-  sample %>% sample_n(nrow(sample), replace = T)
+  boot_prop <-  mean(boot_data$secchi_depth_m <= 2.9)
+  
+  return(boot_prop)
+  
+}
+
+quan <- quantile(replicate(1000, boot_function()), c(0.25, 0.75))
+quantiles_df <- data.frame(Quantile = c("25%", "75%"), Value = round(quan, digits = 5))
+# To get rid of irremovable index column
+quantiles_df <- data.frame(Quantile = quantiles_df$Quantile, Value = quantiles_df$Value)
+kable(quantiles_df)
+```
+
+The 25th percentile and 75th percentile of the bootstrapped proportions of eutrophic inland lakes are estimated to be 0.245 and 0.264, respectively. This suggests **HELP**, so it can be concluded that roughly a quarter of Ontario's inland lakes have high nutrient levels and often suffer from persistent algal blooms.

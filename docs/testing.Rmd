@@ -196,7 +196,10 @@ ggplot(df_rm, aes(y=lat, x=long, col=classification)) + geom_point()
 library(ggpubr)
 library(jpeg)
 img=readJPEG("ontario.jpg")
-
+df_rm %>% 
+  mutate(char_lat = as.character(lat)) %>% 
+  mutate(lat.deci = as.numeric(substr(char_lat, start = 1, stop = 2)) + as.numeric(substr(char_lat, start = 3, stop=nchar(char_lat))) / 60)
+                                                 
 ggplot(df_rm, aes(y=lat, x=long, col=classification)) + background_image(img) +
   geom_point()
 ```
