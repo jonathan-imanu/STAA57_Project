@@ -117,9 +117,9 @@ quantile(replicate(100,boot_function()), c(0.025, 0.975))
 df = df %>% mutate(TSI_Depth = (60 - 14.41*log(secchi_depth_m))) %>% 
   mutate(TSI_Phos = (14.42*log(avg_phos_ug_l) + 4.15)) %>% 
   mutate(TSI = ((TSI_Depth + TSI_Phos) / 2)) %>% 
-  mutate(classification = case_when(TSI <= 40 ~ "0",
-                                    TSI <= 50 ~ "1",
-                                    TRUE ~ "2"))
+  mutate(classification = case_when(TSI <= 40 ~ "Oligotrophic",
+                                    TSI <= 50 ~ "Mesotrophic",
+                                    TRUE ~ "Eutrophic"))
 
 # dropping NA values (8)
 df_rm = df %>% drop_na()
@@ -181,9 +181,9 @@ conmat = table(final_test$classification, final_test$tree_predictions)
 sum(diag(conmat))/sum(conmat)
 ```
 ```{r}
-# create confusion matrix using random forest model and test accuracy
-conmat = table(final_test$classification, final_test$rforest_predict)
-sum(diag(conmat))/sum(conmat)
+  # create confusion matrix using random forest model and test accuracy
+  conmat = table(final_test$classification, final_test$rforest_predict)
+  sum(diag(conmat))/sum(conmat)
 ```
 
 ```{r}

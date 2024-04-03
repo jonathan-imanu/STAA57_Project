@@ -234,3 +234,111 @@ kable(quantiles_df)
 ```
 
 The 25th percentile and 75th percentile of the bootstrapped proportions of eutrophic inland lakes are estimated to be 0.245 and 0.264, respectively. This suggests **HELP**, so it can be concluded that roughly a quarter of Ontario's inland lakes have high nutrient levels and often suffer from persistent algal blooms.
+
+## Trophic State Index (TSI)
+
+Another, widely used, way of determining whether a lake is Oligotrophic, Mesotrophic, or
+Eutrophic is through the Trophic State Index (TSI). Developed by Carson in 1977, the TSI of a lake can be determined with the average of the Trophic State Index in terms of the phosphorus level (µg/L), labelled TSI(TP), and the Trophic State Index in terms of secchi depth, labelled TSI(SD). The formula for TSI(TP) is derived as 14.42ln(TP) + 4.15, where TP represents the total phosphorus level (the average phosphourus level in µg/L). The formula for TSI(SD) is derived as 60 - 14.41ln(SD), where SD is the secchi depth in metres. Thus, the total TSI is (TSI(SD)+TSI(TP)) / 2. 
+
+If a lake's TSI is < 30, it is considered Oligotrophic. If it's TSI is from 30-40, it is Mesotrophic, while any TSI level above 40 is considered Eutrophic. The TSI is a clean and an easily identifiable method of classifying a lake's trophic level. However, many lake databases, including Ontario's do not calculate a lake's TSI level and instead list the lake's respective phosphorus and secchi depth values. In this case, it can be confusing and strenuous to identify a lake's trophic status. It can be very convenient for researchers to know a lake's trophic status at an instant.
+
+Thus, for the purpose of analyzing the productivity level of lakes in Ontario, we will create a model that will analyze a lakes average phosphorus level and secchi depth and instantly determine it's trophic level, without the need for calculating the TSI. The model will consist of a Random Forest model, as well as cross validation. This way, anyone can identify a lake's trophic status, regardless of the dataset. Classying our lake's trophic level will also help us analyze the productivity of lakes across Ontario when plotted on a map.
+
+To start, we use our dataset filtered to the most recent date of testing. We do this by filtering by the most recent date of phosphorus testing, followed by the most recent date of secchi depth testing. Then, we classify each lake's trophic status by calculating the actual TSI of the lake using the formulas specified above - (TSI(SD)+TSI(TP)) / 2. The proportion of each lake's trophic status as classified by TSI are as follows:
+
+```{r, echo = FALSE}
+# filtering data and lakes to most recent date of test
+ df = data %>% 
+      group_by(Lake.Name) %>%
+      filter(phos_date==max(phos_date)) %>%
+      filter(trans_date==max(trans_date))
+
+# using formulas in regards to TSI to calculate the TSI of each lake
+# We classify each lake's trophic status via TSI Index value
+df = df %>% mutate(TSI_Depth = (60 - 14.41*log(secchi_depth_m))) %>% 
+  mutate(TSI_Phos = (14.42*log(avg_phos_ug_l) + 4.15)) %>% 
+  mutate(TSI = ((TSI_Depth + TSI_Phos) / 2)) %>% 
+  mutate(classification = case_when(TSI <= 40 ~ "Oligotrophic",
+                                    TSI <= 50 ~ "Mesotrophic",
+                                    TRUE ~ "Eutrophic")) %>%
+  rename(Total_Phosphorus = avg_phos_ug_l, Secchi_Depth = secchi_depth_m)
+
+# dropping NA values (8)
+df = df %>% drop_na()
+
+# cross validation: splitting df into train and test of 60/40% for model testing
+final = df
+final = final %>% mutate(group_ind = sample(c("train", "test"),
+                                            size=1,
+                                            prob = c(0.6, 0.4),
+                                            replace = T))
+
+final_train = final %>% filter(group_ind == "train")
+final_test = final %>% filter(group_ind == "test")
+```
+\pagebreak
+```{r, echo = FALSE, eval = TRUE, message = FALSE}
+TSI_classification = df %>% mutate(year = year(trans_date)) %>% 
+  group_by(year, classification) %>% 
+  rename(Year = year, Classification = classification) %>% 
+  summarise(mean_class = n()) %>% 
+  pivot_wider(id_cols = Year,
+              names_from = Classification,
+              values_from = mean_class) %>% 
+  arrange(Year)
+  
+
+kable(TSI_classification)
+```
+
+After formally classifying each lake using the TSI, we can then train a model to correctly classify each lake without the use of TSI. Our first step is cross validation - we split our data set as 60% training data, and 40% testing data. To train our model, we will use a Random Forest approach; using bagging (bootstrapped samples of our training data) to create decision trees and creating a prediction based on each tree's features. Each tree analyzes each lake's trophic level, related to their phosphorus level and secchi depth. Such a decision tree is presented below.
+
+```{r, echo = FALSE, eval = TRUE, message = FALSE}
+# implementing decision tree analysis 
+# relating classification level to avg phos lvl and secchi depth
+tree.m = rpart(classification ~ Total_Phosphorus + Secchi_Depth, data = final_train,
+               method = "class")
+fancyRpartPlot(tree.m)
+```
+
+Decision trees are important in assisting our model in deciding what determining factors and interactions needed to obtain a lake's trophic status. The node at the top of the tree is the head node, which asks a question. Each following branching node contains the % of data that logically answers this question (True or False). The leaf nodes (nodes at the very bottom) contain the final predictions of data based on the interactions displayed in the tree.
+
+A Random Forest model generates a large amount of these decision trees, learns and adapts to the interactions and features behind our training set, and uses them in predicting the results of our test set. We generate our Random Forest model based on how our lake's trophic status relates to its average phosphorus level and secchi depth. After creating our model, we are met with the following graph:
+
+```{r, echo = FALSE, eval = TRUE}
+# another test: using randomForest with the same parameters to predict
+
+rforest.m = randomForest(as.factor(classification) ~ 
+                           Total_Phosphorus + Secchi_Depth,
+                         data=final_train,
+                         ntree=500, importance=TRUE)
+varImpPlot(rforest.m)
+```
+
+This graph indicates our average phosphorus level (Total Phosphorus) is the most important variable in our prediction, as our accuracy would decrease significantly if we removed this variable from the equation. Thus, using our Random Forest model, we can predict the trophic status of each lake in our test data set simply with the average phosphorus level and secchi depth alone - no need for the complicated calculations of the TSI. We can display the results of our prediction by creating a confusion matrix and matching our model's prediction to the status classified by the TSI.
+
+```{r, echo = FALSE, eval = TRUE}
+# prediction using random forest
+
+final_test = final_test %>% ungroup(.) %>%
+  mutate(rforest_predict = predict(rforest.m, newdata = final_test))
+
+# create confusion matrix using random forest model and test accuracy
+conmat = table(final_test$classification, final_test$rforest_predict)
+kable(sum(diag(conmat))/sum(conmat), 
+      caption = "Accuracy of our Random Forest Model (as represented by x)")
+```
+
+Thus, our model accuracy fluctuates between ~95-98% accuracy in a dataset containing over 1000 lakes, which is extremely accurate. Through the use of cross-validation and Random Forest, we have successfully created a model that can predict a lake's trophic status using it's average phosphorus level and secchi depth. We know that this model works for any dataset with similar parameters due to our use of cross-validation and a train/test model. 
+
+## Applying our Model
+
+Knowing that our model is extremely accurate, we can use the trophic data predicted by our model to plot each lake to a map of Ontario according to their trophic status. 
+
+## Plot Map Here
+
+After analyzing our map, we can see that **blank**.
+
+## Final Summary
+
+Final summary **here**.
