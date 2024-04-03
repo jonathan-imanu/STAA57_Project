@@ -186,7 +186,12 @@ kable(lake_classification, caption="Average Seechi Disk Depth (m) by Lake Classi
 
 To gain a better understanding of how the seechi disk depth has changed 2015 to 2022, the average seechi disk depth will be calculated and plotted. Figure 3 is the result of this process.
 
-```{r, echo=FALSE, message=FALSE, eval=TRUE}
+
+
+
+
+
+```{r, echo=FALSE, message=FALSE, eval=TRUE, fig.width=6,fig.height=3}
 seechi_by_year <- trans %>% mutate(year = year(trans_date)) %>% 
   group_by(year) %>%
   mutate(avg_seechi = mean(secchi_depth_m)) %>% 
@@ -204,6 +209,10 @@ fig3
 
 
 In an effort to ascertain the proportion of inland lakes whose secchi depth readings indicate eutrophic conditions (less than or equal to 2.9 metres), a one-sample proportion test will be conducted with a confidence interval of 95% and a sample size of 1000. The 25th and 75th percentiles of these proportions will be calculated using bootstrapping to gain a more holistic view of the proportion's variability.
+
+
+
+
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE}
 sample <- trans %>% select(trans_date, secchi_depth_m) %>% 
