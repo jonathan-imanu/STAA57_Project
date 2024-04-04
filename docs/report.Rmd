@@ -6,7 +6,7 @@ output: pdf_document
 date: "2024-03-30"
 ---
 
-```{r setup, include=FALSE, message=FALSE}
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(ggmap)
@@ -94,11 +94,12 @@ geospatial information, site descriptions, collection dates, and metrics
 pertaining to the water quality. The data was last validated on January 17, 2024 
 and is updated yearly. Both datasets were last updated on December 31, 2022. 
 
-# Dataset Description
-
 ```{r, echo=FALSE, eval=TRUE }
 
-variables <- names(data)
+variables <- c("Latitude", "Longitude", "Site.ID", "Township", "Lake.Name",
+               "Site.Description", "avg_phos_ug_l", "phos_is_outlier", 
+               "phos_date", "secchi_depth_m", "trans_date")
+
 types <- sapply(data, class)
 descriptions <- c("The latitude of the lake in DMS", 
                   "The longitude of the lake in DMS", 
@@ -107,22 +108,12 @@ descriptions <- c("The latitude of the lake in DMS",
                   "The name of the lake", 
                   "The description of the sampling point",
                   "The average total phosphorus (ug / L)", 
-                  "Whether total phosphorus", 
+                  "Whether total phosphorus is an outlier", 
                   "The date that the phosphorus sample was collected", 
                   "The depth at which the seechi disk can no longer be distinguished", 
                   "The date that the seechi disk was inserted into the lake")
 summary_df <- data.frame(Variable = variables, Types = types, Description = descriptions)
-kable(summary_df, row.names = FALSE)
-```
-```{r, message=FALSE, echo=FALSE, eval=TRUE}
-library(ggpubr)
-library(jpeg)
-img=readJPEG("ontario.jpg")
-
-                                                 
-ggplot(data, aes(y=Latitude, x=Longitude, col=Site.ID)) + background_image(img) +
-  geom_point()
-
+kable(summary_df, row.names = FALSE, caption="Dataset Description")
 ```
 
 ## Purpose
@@ -139,13 +130,9 @@ Source (https://foca.on.ca/wp-content/uploads/2012/05/Guide-to-Interpreting-TP-a
 
 Water quality, as measured by phosphorus levels and secchi depth, has a major influence on the biodiversity of inland lakes and freshwater streams. 
 
-In the vast majority of Ontario's inland lakes, phosphorus is the element that controls the growth of algae. As such total phosphorus concentrations (µg/L) are most aptly used to assess lake nutrient status. Limnologists place lakes into three categories based on their total phosphorus concentrations: oligotrophic (less than 10 µg/L), mesotrophic (10-20 µg/L TP), and eutrophic (over 20 µg/L). Oligotrophic lakes are low in nutrients and rarely have algal blooms. Mesotrophic lakes vary in characteristics and may experience moderate blooms. Eutrophic lakes have high nutrient levels and often suffer from persistent algal blooms.
+In the vast majority of Ontario's inland lakes, phosphorus is the element that controls the growth of algae. As such total phosphorus concentrations (µg/L) are most aptly used to assess lake nutrient status. Limnologists place lakes into three categories based on their total phosphorus concentrations: oligotrophic (less than 10 µg/L), mesotrophic (10-20 µg/L TP), and eutrophic (over 20 µg/L). Oligotrophic lakes are low in nutrients and rarely have algal blooms. Mesotrophic lakes vary in characteristics and may experience moderate blooms. Eutrophic lakes have high nutrient levels and often suffer from persistent algal blooms. The distribution of average phosphorus concentration in Ontario's inland lakes after filtering out extreme outliers is shown below:
 
-\pagebreak
-
-The distribution of average phosphorus concentration in Ontario's inland lakes after filtering out extreme outliers is shown below:
-
-```{r, echo=FALSE, eval=TRUE}
+```{r, echo=FALSE, eval=TRUE, fig.width=6.3,fig.height=4}
 
 
 no_phos_outliers <- data %>% filter(avg_phos_ug_l <= 50)
@@ -162,7 +149,11 @@ From Figure 1, it can be deduced that the bulk of Ontario's inland lakes possess
 
 Source: https://hallshawklakes.ca/featured/secchi-readings/#:~:text=Secchi%20Reading%20and%20Lake%20Nutrient,enriched%2C%20higher%20levels%20of%20nutrients
 
-Another metric to classify lakes are secchi disks. These tools are black and white disks used to ascertain water clarity by lowering it into the water and measuring the point at which black and white can no longer be distinguished. Readings of over 5 meters indicate oligotrophic conditions, depths of 3.0 to 4.9 meters suggest mesotrophic conditions and readings less than 2.9 meters signify eutrophic lakes, with higher nutrient levels. Below Table 2 shows the average point at which the black and white coloring of the Seechi disk could no longer be distinguished for each lake classification.
+Another metric to classify lakes are secchi disks. These tools are black and white disks used to ascertain water clarity by lowering it into the water and measuring the point at which black and white can no longer be distinguished. Readings of over 5 meters indicate oligotrophic conditions, depths of 3.0 to 4.9 meters suggest mesotrophic conditions and readings less than 2.9 meters signify eutrophic lakes, with higher nutrient levels.
+
+\pagebreak
+
+Below Table 2 shows the average point at which the black and white coloring of the Seechi disk could no longer be distinguished for each lake classification.
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE}
 lake_classification <- data %>% 
@@ -182,13 +173,7 @@ lake_classification <- data %>%
 kable(lake_classification, caption="Average Seechi Disk Depth (m) by Lake Classification")
 ```
 
-\pagebreak
-
-To gain a better understanding of how the seechi disk depth has changed 2015 to 2022, the average seechi disk depth will be calculated and plotted. Figure 3 is the result of this process.
-
-
-
-
+To gain a better understanding of how the seechi disk depth has changed 2015 to 2022, the average seechi disk depth will be calculated and plotted. Figure 2 is the result of this process.
 
 
 ```{r, echo=FALSE, message=FALSE, eval=TRUE, fig.width=6,fig.height=3}
@@ -200,18 +185,15 @@ seechi_by_year <- trans %>% mutate(year = year(trans_date)) %>%
 
 seechi_by_year <- unique(seechi_by_year)
 
-fig3 <- ggplot(seechi_by_year, aes(x=year, y=avg_seechi)) + 
+fig2 <- ggplot(seechi_by_year, aes(x=year, y=avg_seechi)) + 
         geom_line(col="blue") +
         labs(y="Average Seechi Disk Depth (m)", x="Year", 
-             title= "Figure 3: Average Seechi Disk Depth (m) from 2015 - 2022") 
-fig3
+             title= "Figure 2: Average Seechi Disk Depth (m) from 2015 - 2022") 
+fig2
 ```
 
 
 In an effort to ascertain the proportion of inland lakes whose secchi depth readings indicate eutrophic conditions (less than or equal to 2.9 metres), a one-sample proportion test will be conducted with a confidence interval of 95% and a sample size of 1000. The 25th and 75th percentiles of these proportions will be calculated using bootstrapping to gain a more holistic view of the proportion's variability.
-
-
-
 
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE}
@@ -228,7 +210,11 @@ prop_test_result <- prop.test(
 prop_test_result
 ```
 
-From this, it can be determined that the proportion of inland lakes that exhibit eutrophic conditions is estimated to be 0.254, with a 95% confidence interval ranging from 0.225164 and 0.2824012. Since the p-value < 2.2e-16, there is strong evidence against the null hypothesis. This suggests that the proportion of lakes that exhibit eutrophic conditions is significantly different than the null proportion of 0.5.
+From this, it can be determined that the proportion of inland lakes that exhibit eutrophic conditions is estimated to be 0.254, with a 95% confidence interval ranging from 0.225164 and 0.2824012. 
+
+\pagebreak
+
+Since the p-value < 2.2e-16, there is strong evidence against the null hypothesis. This suggests that the proportion of lakes that exhibit eutrophic conditions is significantly different than the null proportion of 0.5.
 
 
 ```{r, echo=FALSE, eval=TRUE}
@@ -245,7 +231,7 @@ quan <- quantile(replicate(1000, boot_function()), c(0.25, 0.75))
 quantiles_df <- data.frame(Quantile = c("25%", "75%"), Value = round(quan, digits = 5))
 # To get rid of irremovable index column
 quantiles_df <- data.frame(Quantile = quantiles_df$Quantile, Value = quantiles_df$Value)
-kable(quantiles_df)
+kable(quantiles_df, caption="Quantile Results from Bootstrapping")
 ```
 
 The 25th percentile and 75th percentile of the bootstrapped proportions of eutrophic inland lakes are estimated to be 0.245 and 0.264, respectively. This suggests **HELP**, so it can be concluded that roughly a quarter of Ontario's inland lakes have high nutrient levels and often suffer from persistent algal blooms.
@@ -292,8 +278,6 @@ final_train = final %>% filter(group_ind == "train")
 final_test = final %>% filter(group_ind == "test")
 ```
 
-\pagebreak
-
 ```{r, echo = FALSE, eval = TRUE, message = FALSE}
 TSI_classification = df %>% mutate(year = year(trans_date)) %>% 
   group_by(year, classification) %>% 
@@ -305,9 +289,307 @@ TSI_classification = df %>% mutate(year = year(trans_date)) %>%
   arrange(Year)
   
 
-kable(TSI_classification)
+kable(TSI_classification, caption="TSI Classification for Filtered Data")
 ```
-```{r, echo=FALSE, message=FALSE, eval=TRUE}
+\pagebreak
+
+# yap about fig 3
+
+```{r, echo=FALSE, message=FALSE, eval=TRUE, fig.width=5,fig.height=4}
+# Filtering to most recent year
+TSI_2022 <- filter(TSI_classification, Year == 2022)
+
+# Preparing our df for the pie chart
+TSI_2022_long <- TSI_2022 %>%
+  pivot_longer(cols = -Year, names_to = "Classification", values_to = "mean_class")
+
+# Creating our pie chart (ggplot does not provide a geom for this)
+pie_chart <- ggplot(data = TSI_2022_long, 
+                    aes(x = "", y = mean_class, fill = Classification)) +
+  geom_bar(stat = "identity", width = 1, color="black") +
+  coord_polar("y", start = 0) +
+  labs(title = "Figure 3: TSI Classification for 2022") + 
+  theme_void()
+
+pie_chart
+```
+
+After formally classifying each lake using the TSI, we can then train a model to correctly classify each lake without the use of TSI. Our first step is cross validation - we split our data set as 60% training data, and 40% testing data. To train our model, we will use a Random Forest approach; using bagging (bootstrapped samples of our training data) to create decision trees and creating a prediction based on each tree's features. Each tree analyzes each lake's trophic level, related to their phosphorus level and secchi depth. Such a decision tree is presented below.
+
+```{r, echo = FALSE, eval = TRUE, message = FALSE, fig.width=7,fig.height=4}
+# implementing decision tree analysis 
+# relating classification level to avg phos lvl and secchi depth
+tree.m = rpart(classification ~ Total_Phosphorus + Secchi_Depth, data = final_train,
+               method = "class")
+fancyRpartPlot(tree.m, main="Figure 4: Decision Tree for Lake Trophic Level according to phosphorus level and secchi depth")
+```
+
+\pagebreak 
+
+Decision trees are important in assisting our model in deciding what determining factors and interactions needed to obtain a lake's trophic status. The node at the top of the tree is the head node, which asks a question. Each following branching node contains the % of data that logically answers this question (True or False). The leaf nodes (nodes at the very bottom) contain the final predictions of data based on the interactions displayed in the tree.
+
+A Random Forest model generates a large amount of these decision trees, learns and adapts to the interactions and features behind our training set, and uses them in predicting the results of our test set. We generate our Random Forest model based on how our lake's trophic status relates to its average phosphorus level and secchi depth. After creating our model, we are met with the following graph:
+
+```{r, echo = FALSE, eval = TRUE}
+# another test: using randomForest with the same parameters to predict
+
+rforest.m = randomForest(as.factor(classification) ~ 
+                           Total_Phosphorus + Secchi_Depth,
+                         data=final_train,
+                         ntree=500, importance=TRUE)
+varImpPlot(rforest.m, main="Figure 5: Random Forest Model Based on Lake Trophic Status")
+```
+
+This graph indicates our average phosphorus level (Total Phosphorus) is the most important variable in our prediction, as our accuracy would decrease significantly if we removed this variable from the equation. Thus, using our Random Forest model, we can predict the trophic status of each lake in our test data set simply with the average phosphorus level and secchi depth alone - no need for the complicated calculations of the TSI. We can display the results of our prediction by creating a confusion matrix and matching our model's prediction to the status classified by the TSI.
+
+```{r, echo = FALSE, eval = TRUE}
+# prediction using random forest
+
+final_test = final_test %>% ungroup(.) %>%
+  mutate(rforest_predict = predict(rforest.m, newdata = final_test))
+
+# create confusion matrix using random forest model and test accuracy
+conmat = table(final_test$classification, final_test$rforest_predict)
+kable(sum(diag(conmat))/sum(conmat), 
+      caption = "Accuracy of Random Forest Model (as represented by x)")
+```
+
+Thus, our model accuracy fluctuates between ~95-98% accuracy in a dataset containing over 1000 lakes, which is extremely accurate. Through the use of cross-validation and Random Forest, we have successfully created a model that can predict a lake's trophic status using it's average phosphorus level and secchi depth. We know that this model works for any dataset with similar parameters due to our use of cross-validation and a train/test model. 
+
+## Applying our Model
+
+Knowing that our model is extremely accurate, we can use the trophic data predicted by our model to plot each lake to a map of Ontario according to their trophic status. 
+
+## Plot Map Here
+
+After analyzing our map, we can see that **blank**.
+
+## Final Summary
+
+Final summary **here**.
+
+\pagebreak
+
+# References 
+
+\pagebreak 
+
+# Appendix 
+
+### Inital Data Preprocessing
+
+```{r, eval=FALSE, echo=TRUE}
+
+# loading the data
+
+trans <- read.csv("../data/transparency.csv")
+phosphorus <- read.csv("../data/phosphorus.csv")
+
+# The common variables between data sets
+sims = c("Latitude", "Longitude", "Site.ID", 
+         "Township","Lake.Name", "Site.Description")
+
+# Selected date-range is 2015-2022
+# Dropped Sample 1 & Sample 2 in favor of "Average.Total.Phosphorus..µg.L."
+
+phosphorus <- phosphorus %>%
+  mutate(date = as.Date(Date..DD.MMM.YY., format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id, -Total.Phosphorus.sample.1..µg.L., 
+         -Total.Phosphorus.sample.2..µg.L., -Data.Collector, -STN) %>%
+  filter(2015 <= year(date) & year(date) <= 2022) %>%
+  rename(Latitude = Latitude..DMS., Longitude = Long..DMS., 
+         avg_phos_ug_l = Average.Total.Phosphorus..µg.L., 
+         phos_date = date, 
+         phos_is_outlier = Possible.outlier) %>%
+  arrange(Latitude)
+
+trans <- trans %>% 
+  mutate(date = as.Date(Date..DD.MMM.YY., format = "%d-%b-%y")) %>% 
+  select(-Date..DD.MMM.YY., -X_id, -STN) %>% 
+  filter(2015 <= year(date) & year(date) <= 2022) %>% 
+  rename(Latitude = Latitude..DMS., Longitude = Longitude..DMS., 
+         secchi_depth_m = Secchi.Depth..m., 
+         trans_date=date, 
+         Township=TOWNSHIP) %>%
+  arrange(Latitude) 
+
+# Merge the two dataframes together 
+df <- merge(phosphorus, trans, by=sims) 
+
+# Update latitude and longitude values
+data <- df %>% group_by(Lake.Name) %>%
+        mutate(char_lat = as.character(Latitude)) %>%
+        mutate(lat.deci = as.numeric(substr(char_lat, start = 1, stop = 2)) + 
+                          as.numeric(substr(char_lat, start = 3, stop=nchar(char_lat))) 
+                          * (0.1 ^ (nchar(char_lat) - 2))) %>% 
+        mutate(char_long = as.character(Longitude)) %>%
+        mutate(long.deci = as.numeric(substr(char_long, start = 1, stop = 2)) + 
+                          as.numeric(substr(char_long, start = 3, stop=nchar(char_long))) 
+                          * (0.1 ^ (nchar(char_long) - 2))) %>% 
+        select(-char_lat, -Latitude, -char_long, -Longitude) %>% 
+        rename(Latitude = lat.deci, Longitude = long.deci)
+```
+
+### Table 1: Dataset Descripton
+
+```{r, echo=TRUE, eval=FALSE}
+
+variables <- c("Latitude", "Longitude", "Site.ID", "Township", "Lake.Name",
+               "Site.Description", "avg_phos_ug_l", "phos_is_outlier", 
+               "phos_date", "secchi_depth_m", "trans_date")
+
+types <- sapply(data, class)
+descriptions <- c("The latitude of the lake in DMS", 
+                  "The longitude of the lake in DMS", 
+                  "The site ID of the sampling point", 
+                  "The township the lake", 
+                  "The name of the lake", 
+                  "The description of the sampling point",
+                  "The average total phosphorus (ug / L)", 
+                  "Whether total phosphorus is an outlier", 
+                  "The date that the phosphorus sample was collected", 
+                  "The depth at which the seechi disk can no longer be distinguished", 
+                  "The date that the seechi disk was inserted into the lake")
+summary_df <- data.frame(Variable = variables, Types = types, Description = descriptions)
+kable(summary_df, row.names = FALSE, caption="Dataset Description")
+```
+
+<!-- ### Figure 1: Geospatial Plot of Lakes -->
+
+<!-- ```{r, message=FALSE, echo=TRUE, eval=FALSE} -->
+<!-- img=readJPEG("ontario.jpg") -->
+
+
+<!-- ggplot(data, aes(y=Latitude, x=Longitude, col=Site.ID)) +  -->
+<!--   background_image(img) + -->
+<!--   geom_point() -->
+<!-- ``` -->
+
+### Figure 1: Distribution of Average Phosphorus Concentration
+
+```{r, echo=TRUE, eval=FALSE}
+
+
+no_phos_outliers <- data %>% filter(avg_phos_ug_l <= 50)
+hist(no_phos_outliers$avg_phos_ug_l, freq = FALSE,
+     main = "Figure 2: Distribution of Average Phosphorus Concentration",
+     xlab = "Average Phosphorus Concentration (µg/l)",
+     ylab = "Density")
+
+# Add density line
+lines(density(no_phos_outliers$avg_phos_ug_l, adjust = 5), col = "red")
+```
+
+### Table 2: Average Seechi Disk Depth (m) by Lake Classification
+
+```{r, echo=TRUE, eval=FALSE, message=FALSE}
+lake_classification <- data %>% 
+  mutate(class = case_when(secchi_depth_m >= 5 ~ "Oligotrophic",
+                           secchi_depth_m >= 3 ~ "Mesotrophic",
+                           TRUE ~ "Eutrophic")) %>% 
+  mutate(year = year(trans_date)) %>% 
+  group_by(year, class) %>% 
+  rename(Year = year, Classification = class) %>% 
+  summarise(mean_secchi = mean(secchi_depth_m)) %>% 
+  pivot_wider(id_cols = Year,
+              names_from = Classification,
+              values_from = mean_secchi) %>% 
+  arrange(Year)
+  
+kable(lake_classification, caption="Average Seechi Disk Depth (m) by Lake Classification")
+```
+
+### Figure 2: Average Seechi Disk Depth (m) from 2015 - 2022
+
+```{r, echo=TRUE, message=FALSE, eval=FALSE, fig.width=6,fig.height=3}
+seechi_by_year <- trans %>% mutate(year = year(trans_date)) %>% 
+  group_by(year) %>%
+  mutate(avg_seechi = mean(secchi_depth_m)) %>% 
+  select(year, avg_seechi) %>% 
+  arrange(year)
+
+seechi_by_year <- unique(seechi_by_year)
+
+fig3 <- ggplot(seechi_by_year, aes(x=year, y=avg_seechi)) + 
+        geom_line(col="blue") +
+        labs(y="Average Seechi Disk Depth (m)", x="Year", 
+             title= "Figure 3: Average Seechi Disk Depth (m) from 2015 - 2022") 
+```
+
+### Hypothesis Testing and Confidence Interval (1-sample proportion test) 
+
+```{r, echo=TRUE, eval=FALSE, message=FALSE}
+sample <- trans %>% select(trans_date, secchi_depth_m) %>% 
+                    sample_n(1000, replace = FALSE) %>% 
+                    drop_na()
+
+prop_test_result <- prop.test(
+  x = sum(sample$secchi_depth_m <= 2.9),  # Number of successes
+  n = 1000,                                # Total number of trials
+  conf.level = 0.95                        # Confidence level
+)
+
+prop_test_result
+```
+
+### Table 3: Quantile Results from Bootstrapping 
+
+```{r, echo=TRUE, eval=FALSE}
+
+boot_function = function(){
+  boot_data <-  sample %>% sample_n(nrow(sample), replace = T)
+  boot_prop <-  mean(boot_data$secchi_depth_m <= 2.9)
+  
+  return(boot_prop)
+  
+}
+
+quan <- quantile(replicate(1000, boot_function()), c(0.25, 0.75))
+quantiles_df <- data.frame(Quantile = c("25%", "75%"), 
+                           Value = round(quan, digits = 5))
+
+# To get rid of irremovable index column
+quantiles_df <- data.frame(Quantile = quantiles_df$Quantile, 
+                           Value = quantiles_df$Value)
+kable(quantiles_df, caption="Quantile Results from Bootstrapping")
+```
+
+### Cross-Validation
+
+```{r, echo=TRUE, eval=FALSE}
+
+boot_function = function(){
+  boot_data <-  sample %>% sample_n(nrow(sample), replace = T)
+  boot_prop <-  mean(boot_data$secchi_depth_m <= 2.9)
+  
+  return(boot_prop)
+  
+}
+
+quan <- quantile(replicate(1000, boot_function()), c(0.25, 0.75))
+quantiles_df <- data.frame(Quantile = c("25%", "75%"), Value = round(quan, digits = 5))
+# To get rid of irremovable index column
+quantiles_df <- data.frame(Quantile = quantiles_df$Quantile, Value = quantiles_df$Value)
+kable(quantiles_df)
+```
+
+### Table 4: TSI Classification for Filtered Data
+
+```{r, echo =TRUE, eval=FALSE, message = FALSE}
+TSI_classification = df %>% mutate(year = year(trans_date)) %>% 
+  group_by(year, classification) %>% 
+  rename(Year = year, Classification = classification) %>% 
+  summarise(mean_class = n()) %>% 
+  pivot_wider(id_cols = Year,
+              names_from = Classification,
+              values_from = mean_class) %>% 
+  arrange(Year)
+
+kable(TSI_classification, caption="TSI Classification for Filtered Data")
+```
+
+### Figure 3: TSI Classification for 2022
+```{r, echo=TRUE, message=FALSE, eval=FALSE}
 # Filtering to most recent year
 TSI_2022 <- filter(TSI_classification, Year == 2022)
 
@@ -326,33 +608,33 @@ pie_chart <- ggplot(data = TSI_2022_long,
 pie_chart
 ```
 
-After formally classifying each lake using the TSI, we can then train a model to correctly classify each lake without the use of TSI. Our first step is cross validation - we split our data set as 60% training data, and 40% testing data. To train our model, we will use a Random Forest approach; using bagging (bootstrapped samples of our training data) to create decision trees and creating a prediction based on each tree's features. Each tree analyzes each lake's trophic level, related to their phosphorus level and secchi depth. Such a decision tree is presented below.
+### Figure 4: Decision Tree for Lake Trophic Level according to phosphorus level and secchi depth
 
-```{r, echo = FALSE, eval = TRUE, message = FALSE}
+```{r, echo = TRUE, eval = FALSE, message = FALSE}
 # implementing decision tree analysis 
 # relating classification level to avg phos lvl and secchi depth
 tree.m = rpart(classification ~ Total_Phosphorus + Secchi_Depth, data = final_train,
                method = "class")
-fancyRpartPlot(tree.m)
+fancyRpartPlot(tree.m, main="Figure 5: Decision Tree for Lake Trophic Level 
+               according to phosphorus level and secchi depth")
 ```
 
-Decision trees are important in assisting our model in deciding what determining factors and interactions needed to obtain a lake's trophic status. The node at the top of the tree is the head node, which asks a question. Each following branching node contains the % of data that logically answers this question (True or False). The leaf nodes (nodes at the very bottom) contain the final predictions of data based on the interactions displayed in the tree.
+### Figure 5: Random Forest Model Based on Lake Trophic Status
 
-A Random Forest model generates a large amount of these decision trees, learns and adapts to the interactions and features behind our training set, and uses them in predicting the results of our test set. We generate our Random Forest model based on how our lake's trophic status relates to its average phosphorus level and secchi depth. After creating our model, we are met with the following graph:
-
-```{r, echo = FALSE, eval = TRUE}
+```{r, echo = TRUE, eval = FALSE}
 # another test: using randomForest with the same parameters to predict
 
 rforest.m = randomForest(as.factor(classification) ~ 
                            Total_Phosphorus + Secchi_Depth,
                          data=final_train,
                          ntree=500, importance=TRUE)
-varImpPlot(rforest.m)
+varImpPlot(rforest.m, main="Figure 6: Random Forest Model 
+           Based on Lake Trophic Status")
 ```
 
-This graph indicates our average phosphorus level (Total Phosphorus) is the most important variable in our prediction, as our accuracy would decrease significantly if we removed this variable from the equation. Thus, using our Random Forest model, we can predict the trophic status of each lake in our test data set simply with the average phosphorus level and secchi depth alone - no need for the complicated calculations of the TSI. We can display the results of our prediction by creating a confusion matrix and matching our model's prediction to the status classified by the TSI.
+### Table 5: Accuracy of our Random Forest Model (as represented by x)
 
-```{r, echo = FALSE, eval = TRUE}
+```{r, echo =TRUE, eval = FALSE}
 # prediction using random forest
 
 final_test = final_test %>% ungroup(.) %>%
@@ -361,19 +643,5 @@ final_test = final_test %>% ungroup(.) %>%
 # create confusion matrix using random forest model and test accuracy
 conmat = table(final_test$classification, final_test$rforest_predict)
 kable(sum(diag(conmat))/sum(conmat), 
-      caption = "Accuracy of our Random Forest Model (as represented by x)")
+      caption = "Accuracy of Random Forest Model (as represented by x)")
 ```
-
-Thus, our model accuracy fluctuates between ~95-98% accuracy in a dataset containing over 1000 lakes, which is extremely accurate. Through the use of cross-validation and Random Forest, we have successfully created a model that can predict a lake's trophic status using it's average phosphorus level and secchi depth. We know that this model works for any dataset with similar parameters due to our use of cross-validation and a train/test model. 
-
-## Applying our Model
-
-Knowing that our model is extremely accurate, we can use the trophic data predicted by our model to plot each lake to a map of Ontario according to their trophic status. 
-
-## Plot Map Here
-
-After analyzing our map, we can see that **blank**.
-
-## Final Summary
-
-Final summary **here**.
