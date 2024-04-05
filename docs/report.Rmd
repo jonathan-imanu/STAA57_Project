@@ -5,8 +5,8 @@ authors: 'Joshua Antonio Crisologo: 1009860438 & Jonathan Manuel: 1010080797'
 output: pdf_document
 date: "2024-03-30"
 ---
-
-```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+     
+```{r setup, include=FALSE, message=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(ggmap)
@@ -371,6 +371,14 @@ Final summary **here**.
 \pagebreak
 
 # References 
+
+Guide to Interpreting Total Phosphorus and Secchi Depth Data from the Lake Partner Program. Lake Partner Ontario, 2013.
+
+“North American Lake Management Society (NALMS).” North American Lake Management Society (NALMS), www.nalms.org/secchidipin/monitoring-methods/trophic-state-equations/.
+
+Prasad, A. Carlson’s Trophic State Index for the Assessment of Trophic Status of Two Lakes in Mandya District. 2012.
+
+“Secchi Readings – Measuring Our Water Clarity – Halls & Hawk Lakes Property Owners Association (HHLPOA).” Halls and Hawk Lakes, 19 Mar. 2011, hallshawklakes.ca/featured/secchi-readings/#:~:text=Secchi%20Reading%20and%20Lake%20Nutrient. Accessed 4 Apr. 2024.
 
 \pagebreak 
 
