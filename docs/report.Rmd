@@ -1,9 +1,8 @@
 ---
 title: 'The Quality of Ontario Lakes'
 subtitle: 'How has the water quality of Ontario’s inland lakes changed from 2015 to 2022, as measured by total phosphorus and water clarity? What does this suggest about the productivity of Ontario’s inland lakes?'
-authors: 'Joshua Antonio Crisologo: 1009860438 & Jonathan Manuel: 1010080797'
+author: 'Joshua Antonio Crisologo & Jonathan Manuel'
 output: pdf_document
-date: "2024-03-30"
 ---
      
 ```{r setup, include=FALSE, message=FALSE}
@@ -338,6 +337,8 @@ kable(sum(diag(conmat))/sum(conmat),
 ```
 
 Table 5 displays that our model accuracy fluctuates between ~95-98% accuracy in a dataset containing over 1000 lakes, which is extremely accurate. Through the use of cross-validation and Random Forest, we have successfully created a model that can predict a lake's trophic status using it's average phosphorus level and secchi depth. We know that this model works for any dataset with similar parameters due to our use of cross-validation and a train/test model. 
+
+\pagebreak
 
 ## Final Summary
 
